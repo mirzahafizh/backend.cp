@@ -80,19 +80,23 @@ module.exports = {
 
   // Get all team members
   getAllTeamMembers: async (req, res) => {
+    console.log("Received request for all team members");
     try {
-      const teamMembers = await Team.findAll();
-      res.json({
-        message: "Team members retrieved successfully",
-        data: teamMembers
-      });
+        const startTime = Date.now();
+        const teamMembers = await Team.findAll();
+        const endTime = Date.now();
+        console.log(`Fetched team members in ${endTime - startTime}ms`);
+        res.json({
+            message: "Team members retrieved successfully",
+            data: teamMembers
+        });
     } catch (error) {
-      res.status(500).json({
-        message: "Error fetching team members",
-        error: error.message
-      });
+        console.error("Error fetching team members:", error);
+        res.status(500).json({
+            message: "Error fetching team members",
+            error: error.message
+        });
     }
-  },
 
   // Get a single team member by ID
   getTeamMemberById: async (req, res) => {
