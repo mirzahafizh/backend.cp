@@ -96,7 +96,7 @@ module.exports = {
             message: "Error fetching team members",
             error: error.message
         });
-    }
+    },
 
   // Get a single team member by ID
   getTeamMemberById: async (req, res) => {
