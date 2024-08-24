@@ -5,7 +5,7 @@
       "src": "app.js",
       "use": "@vercel/node",
       "config": {
-        "buildCommand": "npm install"
+        "includeFiles": ["node_modules/**"]
       }
     }
   ],
