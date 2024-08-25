@@ -14,5 +14,5 @@ route.use("/users", userRoute);
 route.use('/projects', projectRoute);
 route.use('/teams', teamRoute);
 route.use('/contact', contactRoute); // Add the contact route here
-app.use('/imagekit', imagekitRoutes);
+route.use('/imagekit', imagekitRoutes);
 module.exports = route;
