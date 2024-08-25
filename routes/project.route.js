@@ -2,8 +2,8 @@ const express = require('express');
 const route = express.Router();
 const { createProject, updateProject, getAllProjects, getProjectById, deleteProject } = require('../controllers/project.controller');
 const { authenticateToken } = require('../middleware/authenticateToken');
-const upload = require('../middleware/uploads'); // Middleware for handling file uploads
-
+const multer = require('multer'); // Pastikan ini benar
+const { upload } = require('../middleware/uploads'); // Pastikan ini juga benar
 // GET all projects
 route.get("/", getAllProjects);
 
