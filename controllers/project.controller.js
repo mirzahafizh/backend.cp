@@ -1,5 +1,6 @@
 const { Project } = require('../models');
-const { upload } = require('../middleware/uploads'); // Import upload dan deleteFile
+const fs = require('fs');
+const path = require('path');
 
 const deleteFile = (filePath) => {
     fs.unlink(filePath, (err) => {
@@ -15,22 +16,17 @@ module.exports = {
         try {
             const { name, description, link_project } = req.body;
             const file = req.file;
-            let imageId = null;
+            let imagePath = null;
 
             if (file) {
-                // Handle file upload to ImageKit
-                const uploadResponse = await imageKit.upload({
-                    file: file.buffer,
-                    fileName: file.originalname
-                });
-                imageId = uploadResponse.fileId;
+                imagePath = file.path; // Path of the uploaded file
             }
 
             const newProject = await Project.create({
                 name,
                 description,
                 link_project,
-                imageId
+                imagePath
             });
 
             res.status(201).json({
@@ -52,7 +48,7 @@ module.exports = {
             const { id } = req.params;
             const { name, description, link_project } = req.body;
             const file = req.file;
-            let newImageId = null;
+            let newImagePath = null;
 
             const project = await Project.findByPk(id);
             if (!project) {
@@ -62,23 +58,19 @@ module.exports = {
             }
 
             if (file) {
-                // Delete old image from ImageKit
-                if (project.imageId) {
-                    await imageKit.deleteFile(project.imageId);
+                // Delete old image from file system
+                if (project.imagePath) {
+                    deleteFile(project.imagePath);
                 }
 
-                // Upload new image to ImageKit
-                const uploadResponse = await imageKit.upload({
-                    file: file.buffer,
-                    fileName: file.originalname
-                });
-                newImageId = uploadResponse.fileId;
+                // Save new image path
+                newImagePath = file.path;
             }
 
             await project.update({
                 name,
                 description,
-                imageId: newImageId || project.imageId,
+                imagePath: newImagePath || project.imagePath,
                 link_project: link_project || project.link_project
             });
 
@@ -143,9 +135,9 @@ module.exports = {
                 });
             }
 
-            // Delete image from ImageKit
-            if (project.imageId) {
-                await imageKit.deleteFile(project.imageId);
+            // Delete image from file system
+            if (project.imagePath) {
+                deleteFile(project.imagePath);
             }
 
             await project.destroy();
