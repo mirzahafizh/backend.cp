@@ -6,6 +6,9 @@ const teamRoute = require('./team.route');
 const contactRoute = require('./contact.route'); // Import the contact route
 const imagekitRoutes = require('./routes/imagekit.route');
 
+
+app.use(express.json()); // For parsing application/json
+app.use(express.urlencoded({ extended: true })); /
 route.get("/", (req, res) => {
     res.json("success");
 });
