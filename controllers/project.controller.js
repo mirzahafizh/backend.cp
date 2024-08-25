@@ -1,20 +1,18 @@
 const { Project } = require('../models');
-const ImageKit = require('imagekit');
+const fs = require('fs');
+const path = require('path');
 
-// Initialize ImageKit with your credentials
-const imageKit = new ImageKit({
-    publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
-    privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
-    urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
-});
+// Define the directory where images will be stored
+const imageDirectory = path.join(__dirname, '../uploads');
 
-// Utility function to delete image from ImageKit
-const deleteImage = async (imageId) => {
-    try {
-        await imageKit.deleteFile(imageId);
-    } catch (error) {
-        console.error('Error deleting image:', error);
-    }
+// Utility function to delete image from local storage
+const deleteImage = (imageName) => {
+    const imagePath = path.join(imageDirectory, imageName);
+    fs.unlink(imagePath, (err) => {
+        if (err) {
+            console.error('Error deleting image:', err);
+        }
+    });
 };
 
 module.exports = {
@@ -23,18 +21,14 @@ module.exports = {
         try {
             const { name, description, link_project } = req.body;
             const file = req.file;
-            let imageId = null;
+            let imageName = null;
 
             if (file) {
-                // Upload image to ImageKit
-                const uploadResponse = await imageKit.upload({
-                    file: file.buffer,
-                    fileName: file.originalname
-                });
-                imageId = uploadResponse.fileId;
+                // Save file to local storage
+                imageName = file.filename;
             }
 
-            const newProject = await Project.create({ name, description, imageId, link_project });
+            const newProject = await Project.create({ name, description, imageName, link_project });
             res.status(201).json({
                 message: "Project created successfully",
                 data: newProject
@@ -54,7 +48,7 @@ module.exports = {
             const { id } = req.params;
             const { name, description, link_project } = req.body;
             const file = req.file;
-            let newImageId = null;
+            let newImageName = null;
 
             const project = await Project.findByPk(id);
             if (!project) {
@@ -64,23 +58,19 @@ module.exports = {
             }
 
             if (file) {
-                // Delete old image
-                if (project.imageId) {
-                    await deleteImage(project.imageId);
+                // Delete old image if exists
+                if (project.imageName) {
+                    deleteImage(project.imageName);
                 }
 
-                // Upload new image to ImageKit
-                const uploadResponse = await imageKit.upload({
-                    file: file.buffer,
-                    fileName: file.originalname
-                });
-                newImageId = uploadResponse.fileId;
+                // Save new image to local storage
+                newImageName = file.filename;
             }
 
             await project.update({ 
                 name, 
                 description, 
-                imageId: newImageId || project.imageId,
+                imageName: newImageName || project.imageName,
                 link_project: link_project || project.link_project // Update link_project
             });
             res.json({
@@ -144,9 +134,9 @@ module.exports = {
                 });
             }
 
-            // Delete image from ImageKit
-            if (project.imageId) {
-                await deleteImage(project.imageId);
+            // Delete image from local storage
+            if (project.imageName) {
+                deleteImage(project.imageName);
             }
 
             await project.destroy();
