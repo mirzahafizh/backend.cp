@@ -1,5 +1,13 @@
 const { Project } = require('../models');
-const { upload, deleteFile } = require('../middleware/uploads'); // Import upload dan deleteFile
+const { upload } = require('../middleware/uploads'); // Import upload dan deleteFile
+
+const deleteFile = (filePath) => {
+    fs.unlink(filePath, (err) => {
+        if (err) {
+            console.error('Error deleting file:', err);
+        }
+    });
+};
 
 module.exports = {
     // Create a new project
