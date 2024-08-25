@@ -36,6 +36,8 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'Team',
+    tableName: 'teams', // Ensure this matches the actual table name
+    timestamps: false // Set to true if your table has timestamp columns
   });
 
   return Team;
