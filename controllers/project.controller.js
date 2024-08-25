@@ -1,27 +1,5 @@
 const { Project } = require('../models');
-const path = require('path');
-const fs = require('fs');
-const multer = require('multer');
-
-// Configure multer for local file storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, '../uploads'); // Ensure this directory exists and is writable
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname)); // Unique filename
-    }
-});
-
-const upload = multer({ storage });
-
-const deleteFile = (filePath) => {
-    fs.unlink(filePath, (err) => {
-        if (err) {
-            console.error('Error deleting file:', err);
-        }
-    });
-};
+const { upload, deleteFile } = require('../middleware/uploads'); // Import upload dan deleteFile
 
 module.exports = {
     // Create a new project
@@ -30,29 +8,29 @@ module.exports = {
             const { name, description, link_project } = req.body;
             const file = req.file;
             let imageId = null;
-    
+
             if (file) {
-                // Handle file upload
+                // Handle file upload to ImageKit
                 const uploadResponse = await imageKit.upload({
                     file: file.buffer,
                     fileName: file.originalname
                 });
                 imageId = uploadResponse.fileId;
             }
-    
+
             const newProject = await Project.create({
                 name,
                 description,
                 link_project,
                 imageId
             });
-    
+
             res.status(201).json({
                 message: "Project created successfully",
                 data: newProject
             });
         } catch (error) {
-            console.error('Error creating project:', error); // Log detailed error
+            console.error('Error creating project:', error);
             res.status(500).json({
                 message: "Error creating project",
                 error: error.message
@@ -76,9 +54,9 @@ module.exports = {
             }
 
             if (file) {
-                // Delete old image
+                // Delete old image from ImageKit
                 if (project.imageId) {
-                    await deleteImage(project.imageId);
+                    await imageKit.deleteFile(project.imageId);
                 }
 
                 // Upload new image to ImageKit
@@ -89,12 +67,13 @@ module.exports = {
                 newImageId = uploadResponse.fileId;
             }
 
-            await project.update({ 
-                name, 
-                description, 
+            await project.update({
+                name,
+                description,
                 imageId: newImageId || project.imageId,
-                link_project: link_project || project.link_project // Update link_project
+                link_project: link_project || project.link_project
             });
+
             res.json({
                 message: "Project updated successfully",
                 data: project
@@ -158,7 +137,7 @@ module.exports = {
 
             // Delete image from ImageKit
             if (project.imageId) {
-                await deleteImage(project.imageId);
+                await imageKit.deleteFile(project.imageId);
             }
 
             await project.destroy();
