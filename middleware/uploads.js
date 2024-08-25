@@ -1,18 +1,26 @@
-// middleware/uploads.js
+// middlewares/upload.js
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs'); // Tambahkan fs
 
-// Define storage for multer
+// Konfigurasi penyimpanan file
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, path.join(__dirname, '../uploads')); // Save files to the 'uploads' directory
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/'); // Menyimpan file di folder 'uploads'
     },
-    filename: function (req, file, cb) {
-        cb(null, file.originalname); // Use original file name
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname)); // Menambahkan timestamp ke nama file
     }
 });
 
-// Initialize multer with the storage configuration
 const upload = multer({ storage });
 
-module.exports = upload;
+const deleteFile = (filePath) => {
+    fs.unlink(filePath, (err) => {
+        if (err) {
+            console.error('Error deleting file:', err);
+        }
+    });
+};
+
+module.exports = { upload, deleteFile }; // Ekspor upload dan deleteFile
