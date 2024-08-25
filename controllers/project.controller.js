@@ -1,20 +1,27 @@
 const { Project } = require('../models');
-const ImageKit = require('imagekit');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 
-// Initialize ImageKit with your credentials
-const imageKit = new ImageKit({
-    publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
-    privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
-    urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
+// Configure multer for local file storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/'); // Define your upload directory
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname)); // Unique filename
+    }
 });
 
-// Utility function to delete image from ImageKit
-const deleteImage = async (imageId) => {
-    try {
-        await imageKit.deleteFile(imageId);
-    } catch (error) {
-        console.error('Error deleting image:', error);
-    }
+const upload = multer({ storage });
+
+// Utility function to delete a file
+const deleteFile = (filePath) => {
+    fs.unlink(filePath, (err) => {
+        if (err) {
+            console.error('Error deleting file:', err);
+        }
+    });
 };
 
 module.exports = {
@@ -23,30 +30,25 @@ module.exports = {
         try {
             const { name, description, link_project } = req.body;
             const file = req.file;
-            let imageId = null;
-    
+            let imagePath = null;
+
             if (file) {
-                // Handle file upload
-                const uploadResponse = await imageKit.upload({
-                    file: file.buffer,
-                    fileName: file.originalname
-                });
-                imageId = uploadResponse.fileId;
+                imagePath = file.path; // Store the file path
             }
-    
+
             const newProject = await Project.create({
                 name,
                 description,
                 link_project,
-                imageId
+                imagePath // Save the image path to the database
             });
-    
+
             res.status(201).json({
                 message: "Project created successfully",
                 data: newProject
             });
         } catch (error) {
-            console.error('Error creating project:', error); // Log detailed error
+            console.error('Error creating project:', error);
             res.status(500).json({
                 message: "Error creating project",
                 error: error.message
@@ -60,7 +62,7 @@ module.exports = {
             const { id } = req.params;
             const { name, description, link_project } = req.body;
             const file = req.file;
-            let newImageId = null;
+            let newImagePath = null;
 
             const project = await Project.findByPk(id);
             if (!project) {
@@ -71,24 +73,21 @@ module.exports = {
 
             if (file) {
                 // Delete old image
-                if (project.imageId) {
-                    await deleteImage(project.imageId);
+                if (project.imagePath) {
+                    deleteFile(project.imagePath);
                 }
 
-                // Upload new image to ImageKit
-                const uploadResponse = await imageKit.upload({
-                    file: file.buffer,
-                    fileName: file.originalname
-                });
-                newImageId = uploadResponse.fileId;
+                // Save new image path
+                newImagePath = file.path;
             }
 
             await project.update({ 
                 name, 
                 description, 
-                imageId: newImageId || project.imageId,
+                imagePath: newImagePath || project.imagePath,
                 link_project: link_project || project.link_project // Update link_project
             });
+
             res.json({
                 message: "Project updated successfully",
                 data: project
@@ -150,9 +149,9 @@ module.exports = {
                 });
             }
 
-            // Delete image from ImageKit
-            if (project.imageId) {
-                await deleteImage(project.imageId);
+            // Delete image file
+            if (project.imagePath) {
+                deleteFile(project.imagePath);
             }
 
             await project.destroy();
