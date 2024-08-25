@@ -7,6 +7,7 @@
     "dev": "nodemon app.js",
     "preinstall": "npm install mysql2",
     "preinstall": "npm install multer",
+    "preinstall": "npm install imagekit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
