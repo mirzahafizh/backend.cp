@@ -6,7 +6,7 @@ const multer = require('multer');
 // Configure multer for local file storage
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Define your upload directory
+        cb(null, '../uploads'); // Ensure this directory exists and is writable
     },
     filename: (req, file, cb) => {
         cb(null, Date.now() + path.extname(file.originalname)); // Unique filename
@@ -15,7 +15,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Utility function to delete a file
 const deleteFile = (filePath) => {
     fs.unlink(filePath, (err) => {
         if (err) {
@@ -30,25 +29,30 @@ module.exports = {
         try {
             const { name, description, link_project } = req.body;
             const file = req.file;
-            let imagePath = null;
-
+            let imageId = null;
+    
             if (file) {
-                imagePath = file.path; // Store the file path
+                // Handle file upload
+                const uploadResponse = await imageKit.upload({
+                    file: file.buffer,
+                    fileName: file.originalname
+                });
+                imageId = uploadResponse.fileId;
             }
-
+    
             const newProject = await Project.create({
                 name,
                 description,
                 link_project,
-                imagePath // Save the image path to the database
+                imageId
             });
-
+    
             res.status(201).json({
                 message: "Project created successfully",
                 data: newProject
             });
         } catch (error) {
-            console.error('Error creating project:', error);
+            console.error('Error creating project:', error); // Log detailed error
             res.status(500).json({
                 message: "Error creating project",
                 error: error.message
@@ -62,7 +66,7 @@ module.exports = {
             const { id } = req.params;
             const { name, description, link_project } = req.body;
             const file = req.file;
-            let newImagePath = null;
+            let newImageId = null;
 
             const project = await Project.findByPk(id);
             if (!project) {
@@ -73,21 +77,24 @@ module.exports = {
 
             if (file) {
                 // Delete old image
-                if (project.imagePath) {
-                    deleteFile(project.imagePath);
+                if (project.imageId) {
+                    await deleteImage(project.imageId);
                 }
 
-                // Save new image path
-                newImagePath = file.path;
+                // Upload new image to ImageKit
+                const uploadResponse = await imageKit.upload({
+                    file: file.buffer,
+                    fileName: file.originalname
+                });
+                newImageId = uploadResponse.fileId;
             }
 
             await project.update({ 
                 name, 
                 description, 
-                imagePath: newImagePath || project.imagePath,
+                imageId: newImageId || project.imageId,
                 link_project: link_project || project.link_project // Update link_project
             });
-
             res.json({
                 message: "Project updated successfully",
                 data: project
@@ -149,9 +156,9 @@ module.exports = {
                 });
             }
 
-            // Delete image file
-            if (project.imagePath) {
-                deleteFile(project.imagePath);
+            // Delete image from ImageKit
+            if (project.imageId) {
+                await deleteImage(project.imageId);
             }
 
             await project.destroy();
