@@ -1,20 +1,19 @@
+// middleware/uploads.js
 const multer = require('multer');
 const path = require('path');
 
-// Set storage engine
+// Setup storage engine
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    cb(null, 'uploads/'); // Set the destination for file uploads
   },
   filename: (req, file, cb) => {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}${ext}`); // Set the filename with a timestamp
   }
 });
 
-// Initialize upload
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // Limit file size to 5MB
-});
+// Initialize upload middleware
+const upload = multer({ storage });
 
 module.exports = { upload };
