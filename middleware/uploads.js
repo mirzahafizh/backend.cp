@@ -1,7 +1,7 @@
 // middlewares/upload.js
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs'); // Tambahkan fs
+const fs = require('fs');
 
 // Konfigurasi penyimpanan file
 const storage = multer.diskStorage({
@@ -23,4 +23,4 @@ const deleteFile = (filePath) => {
     });
 };
 
-module.exports = { upload, deleteFile }; // Ekspor upload dan deleteFile
+module.exports = upload; // Pastikan hanya `upload` yang diekspor
